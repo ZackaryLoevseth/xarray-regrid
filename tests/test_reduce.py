@@ -110,24 +110,31 @@ def test_most_common(dummy_lc_data, dummy_target_grid):
     assert regrid_result.dtype == input_data_int.dtype
 
 
-def test_least_common():
-    # Each 2x2 block is one target cell: {3,3,3,4}, {1,1,1,2}, {2,2,2,2}, {4,4,4,3}.
+def test_least_common(dummy_lc_data, dummy_target_grid):
     # Labels absent from a cell must not be selected.
-    axis = [0.5, 1.5, 2.5, 3.5]
-    data = xr.DataArray(
-        np.array(
-            [[3, 3, 1, 1], [3, 4, 1, 2], [2, 2, 4, 4], [2, 2, 4, 3]], dtype="uint8"
-        ),
-        dims=("y", "x"),
-        coords={"y": axis, "x": axis},
-        name="lc",
+    expected_data = np.array(
+        [
+            [2, 2, 0, 0, 0, 0],
+            [0, 2, 2, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [3, 0, 0, 0, 0, 1],
+        ],
+        dtype="uint8",
     )
-    target = xr.Dataset(coords={"y": [1.0, 3.0], "x": [1.0, 3.0]})
+    input_data_int = dummy_lc_data["lc"].astype("uint8")
 
-    result = data.regrid.least_common(target, values=np.array([1, 2, 3, 4]))
+    regrid_result = input_data_int.regrid.least_common(
+        dummy_target_grid,
+        values=EXP_LABELS,
+    )
+    xr.testing.assert_equal(
+        regrid_result,
+        make_expected_ds(expected_data)["lc"],
+    )
 
-    assert_array_equal(result.values, [[4, 2], [2, 3]])
-    assert result.dtype == data.dtype
+    assert regrid_result.dtype == input_data_int.dtype
 
 
 def test_oversized_most_common(dummy_lc_data, oversized_dummy_target_grid):
